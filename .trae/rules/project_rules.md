@@ -1,0 +1,2 @@
+- Gunakan selalu bahasa indonesia
+- Menggunakan stack laravel 12, Livewire, Tailwind CSS 4

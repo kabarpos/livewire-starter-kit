@@ -1,114 +1,54 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 
 new class extends Component {
-    public string $name = '';
-    public string $email = '';
-
-    /**
-     * Mount the component.
-     */
-    public function mount(): void
-    {
-        $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
-    }
-
-    /**
-     * Update the profile information for the currently authenticated user.
-     */
-    public function updateProfileInformation(): void
-    {
-        $user = Auth::user();
-
-        $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-
-            'email' => [
-                'required',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-                Rule::unique(User::class)->ignore($user->id)
-            ],
-        ]);
-
-        $user->fill($validated);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
-        $user->save();
-
-        $this->dispatch('profile-updated', name: $user->name);
-    }
-
-    /**
-     * Send an email verification notification to the current user.
-     */
-    public function resendVerificationNotification(): void
-    {
-        $user = Auth::user();
-
-        if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', absolute: false));
-
-            return;
-        }
-
-        $user->sendEmailVerificationNotification();
-
-        Session::flash('status', 'verification-link-sent');
-    }
+    //
 }; ?>
 
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
-        <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
-
-            <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
-
-                @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&! auth()->user()->hasVerifiedEmail())
-                    <div>
-                        <flux:text class="mt-4">
-                            {{ __('Your email address is unverified.') }}
-
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
-                                {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
-
-                        @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
-                                {{ __('A new verification link has been sent to your email address.') }}
-                            </flux:text>
-                        @endif
-                    </div>
-                @endif
-            </div>
-
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full">{{ __('Save') }}</flux:button>
+    <x-settings.layout :heading="__('Profile')" :subheading="__('Update your profile information')">
+        <div class="w-full mx-auto">
+            <!-- 2 Column Layout for Desktop, 1 Column for Mobile -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <!-- Avatar Upload Component -->
+                    <livewire:settings.profile.avatar-upload />
+                    
+                    <!-- Email Verification Component -->
+                    <livewire:settings.profile.email-verification />
                 </div>
-
-                <x-action-message class="me-3" on="profile-updated">
-                    {{ __('Saved.') }}
-                </x-action-message>
+                
+                <!-- Right Column -->
+                <div class="space-y-6">
+                    <!-- Profile Information Form Component -->
+                    <livewire:settings.profile.information-form />
+                </div>
             </div>
-        </form>
-
-        <livewire:settings.delete-user-form />
+            
+            <!-- Danger Zone - Full Width -->
+            <div class="pt-8 mt-8 rounded-2xl">
+                <div class="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/30 border border-red-200 dark:border-red-800/50 rounded-2xl p-6 backdrop-blur-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="flex-shrink-0 w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
+                                <flux:icon.exclamation-triangle class="w-6 h-6 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-red-900 dark:text-red-100">{{ __('Zona Berbahaya') }}</h3>
+                                <p class="text-sm text-red-700 dark:text-red-300">{{ __('Tindakan berikut tidak dapat dibatalkan.') }}</p>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <!-- Delete User Form -->
+                            <livewire:settings.delete-user-form />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </x-settings.layout>
 </section>
